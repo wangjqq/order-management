@@ -1,12 +1,12 @@
 import { PageContainer } from '@ant-design/pro-components';
 import styles from './index.less';
 
-const Customer: React.FC = () => {
+const File = () => {
   return (
     <PageContainer ghost>
-      <div className={styles.container}>Customer</div>
+      <div className={styles.container}>File</div>
     </PageContainer>
   );
 };
 
-export default Customer;
+export default File;

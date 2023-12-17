@@ -20,14 +20,26 @@ export default defineConfig({
       component: './Home',
     },
     {
-      name: '订单管理',
-      path: '/order',
-      component: './Order',
-    },
-    {
-      name: '客户管理',
-      path: '/customer',
-      component: './Customer',
+      name: '数据管理',
+      path: '/dataManagement',
+      // component: './DataManagement',
+      routes: [
+        {
+          name: '订单管理',
+          path: '/dataManagement/order',
+          component: './Order',
+        },
+        {
+          name: '客户管理',
+          path: '/dataManagement/customer',
+          component: './Customer',
+        },
+        {
+          name: '文件管理',
+          path: '/dataManagement/file',
+          component: './File',
+        },
+      ],
     },
   ],
   npmClient: 'pnpm',

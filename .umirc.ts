@@ -9,11 +9,13 @@ export default defineConfig({
   layout: {
     title: '@umijs/max',
   },
+  lessLoader: {},
   routes: [
     {
       path: '/',
       redirect: '/home',
     },
+    { path: '/login', component: './Login', layout: false },
     {
       name: '首页',
       path: '/home',

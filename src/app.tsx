@@ -1,12 +1,46 @@
 import {
+  DownOutlined,
   GithubFilled,
   InfoCircleFilled,
   QuestionCircleFilled,
 } from '@ant-design/icons';
 import { DefaultFooter } from '@ant-design/pro-components';
-import { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
+import { Dropdown, MenuProps, Space } from 'antd';
+import { useEffect, useState } from 'react';
+import { history } from 'umi';
+import { RequestConfig, RunTimeLayoutConfig } from './.umi/exports';
+import { checkUser } from './services/user';
 
-export const layout: RunTimeLayoutConfig = (initialState) => {
+const items: MenuProps['items'] = [
+  {
+    key: '1',
+    label: (
+      <span
+        onClick={() => {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          history.push('/login');
+        }}
+      >
+        退出登录
+      </span>
+    ),
+  },
+];
+
+export const layout: RunTimeLayoutConfig = () => {
+  // eslint-disable-next-line
+  const [user, setUser] = useState<{ username: string }>();
+  // eslint-disable-next-line
+  useEffect(() => {
+    checkUser()
+      .then(({ data }) => {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+      })
+      .catch(() => {});
+  }, []);
+
   return {
     // 常用属性
     title: '管理系统',
@@ -21,13 +55,12 @@ export const layout: RunTimeLayoutConfig = (initialState) => {
       src: 'https://gw.alipayobjects.com/zos/antfincdn/efFD%24IOql2/weixintupian_20170331104822.jpg',
       size: 'small',
       title: (
-        <div
-          style={{
-            color: '#dfdfdf',
-          }}
-        >
-          顾渊
-        </div>
+        <Dropdown menu={{ items }}>
+          <Space>
+            {user ? user.username : '未登录'}
+            <DownOutlined />
+          </Space>
+        </Dropdown>
       ),
     },
     actionsRender: (props) => {
@@ -57,5 +90,6 @@ export const request: RequestConfig = {
     errorThrower() {},
   },
   requestInterceptors: [],
+  // 响应拦截器
   responseInterceptors: [],
 };

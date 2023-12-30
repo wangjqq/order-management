@@ -36,14 +36,18 @@ const Login: React.FC = () => {
     >
       <div className={styles['login']}>
         <div className={styles['login-title']}>订单管理系统</div>
-        <Form form={form} labelCol={{ span: 0 }} wrapperCol={{ span: 18 }}>
+        <Form form={form} labelCol={{ span: 0 }} wrapperCol={{ span: 24 }}>
           <Form.Item
             label="用户名"
             name="username"
             rules={[{ required: true, message: '请输入用户名!' }]}
+            style={{ marginTop: '50px' }}
           >
             <Input
-              prefix={<UserOutlined />}
+              prefix={
+                <UserOutlined style={{ color: '#36b6f6', fontSize: '24px' }} />
+              }
+              style={{ color: '#36b6f6', width: '100%' }}
               bordered={false}
               placeholder="请输入用户名"
             />
@@ -53,15 +57,29 @@ const Login: React.FC = () => {
             label="密码"
             name="password"
             rules={[{ required: true, message: '请输入密码!' }]}
+            style={{ marginTop: '50px' }}
           >
             <Input.Password
-              prefix={<LockOutlined />}
+              prefix={
+                <LockOutlined style={{ color: '#36b6f6', fontSize: '24px' }} />
+              }
               bordered={false}
               placeholder="请输入密码"
+              onPressEnter={() => doLogin()}
             />
           </Form.Item>
 
-          <Button type="primary" loading={loading} onClick={doLogin}>
+          <Button
+            block
+            type="primary"
+            loading={loading}
+            onClick={() => doLogin()}
+            style={{
+              background:
+                'linear-gradient(to right, #0a03b2, #147cce, #0a03b2)',
+              marginTop: '20px',
+            }}
+          >
             登录
           </Button>
         </Form>

@@ -103,11 +103,11 @@ export default () => {
               company: string;
             }>
               key="add"
-              title="添加顾客"
+              title="新增商品"
               trigger={
                 <Button type="primary">
                   <PlusOutlined />
-                  添加顾客
+                  新增商品
                 </Button>
               }
               labelCol={{ span: 5 }}

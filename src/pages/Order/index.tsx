@@ -1,12 +1,18 @@
-import { request } from '@@/plugin-request';
-import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
+import { createOrder, getCustomerAddress, getOrders } from '@/services/order';
+import { getProducts } from '@/services/product';
+import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
+  ModalForm,
   PageContainer,
+  ProFormDateTimePicker,
+  ProFormDigit,
+  ProFormSelect,
+  ProFormTextArea,
   ProTable,
   TableDropdown,
 } from '@ant-design/pro-components';
-import { Button, Dropdown, Space, Tag } from 'antd';
+import { Button, Form, Space, Tag, message } from 'antd';
 import { useRef } from 'react';
 import styles from './index.less';
 export const waitTimePromise = async (time: number = 100) => {
@@ -44,53 +50,23 @@ const columns: ProColumns<GithubIssueItem>[] = [
     width: 48,
   },
   {
-    title: '标题',
-    dataIndex: 'title',
-    copyable: true,
-    ellipsis: true,
-    tip: '标题过长会自动收缩',
-    formItemProps: {
-      rules: [
-        {
-          required: true,
-          message: '此项为必填项',
-        },
-      ],
-    },
+    title: '商品',
+    dataIndex: 'product',
   },
   {
-    disable: true,
     title: '状态',
-    dataIndex: 'state',
-    filters: true,
-    onFilter: true,
+    dataIndex: 'OrderStatus',
     ellipsis: true,
-    valueType: 'select',
-    valueEnum: {
-      all: { text: '超长'.repeat(50) },
-      open: {
-        text: '未解决',
-        status: 'Error',
-      },
-      closed: {
-        text: '已解决',
-        status: 'Success',
-        disabled: true,
-      },
-      processing: {
-        text: '解决中',
-        status: 'Processing',
-      },
-    },
+    render: (OrderStatus) => (
+      <Space>
+        <Tag>{OrderStatus}</Tag>
+      </Space>
+    ),
   },
   {
     disable: true,
     title: '标签',
     dataIndex: 'labels',
-    search: false,
-    renderFormItem: (_, { defaultRender }) => {
-      return defaultRender(_);
-    },
     render: (_, record) => (
       <Space>
         {record.labels.map(({ name, color }) => (
@@ -153,6 +129,8 @@ const columns: ProColumns<GithubIssueItem>[] = [
 
 export default () => {
   const actionRef = useRef<ActionType>();
+  const [form] = Form.useForm<{ name: string; company: string }>();
+  // actionRef.current.reload();
   return (
     <PageContainer ghost>
       <div className={styles.container}>
@@ -160,86 +138,161 @@ export default () => {
           columns={columns}
           actionRef={actionRef}
           cardBordered
-          request={async (params, sort, filter) => {
-            console.log(sort, filter);
-            await waitTime(100);
-            return request<{
-              data: GithubIssueItem[];
-            }>('https://proapi.azurewebsites.net/github/issues', {
-              params,
+          request={async () => {
+            return await getOrders({
+              userId: JSON.parse(localStorage.getItem('user') || '{}').user_id,
             });
           }}
-          editable={{
-            type: 'multiple',
-          }}
-          columnsState={{
-            persistenceKey: 'pro-table-singe-demos',
-            persistenceType: 'localStorage',
-            onChange(value) {
-              console.log('value: ', value);
-            },
-          }}
           rowKey="id"
-          search={{
-            labelWidth: 'auto',
-          }}
           options={{
             setting: {
               listsHeight: 400,
             },
           }}
-          form={{
-            // 由于配置了 transform，提交的参与与定义的不同这里需要转化一下
-            syncToUrl: (values, type) => {
-              if (type === 'get') {
-                return {
-                  ...values,
-                  created_at: [values.startTime, values.endTime],
-                };
-              }
-              return values;
-            },
-          }}
+          search={false}
           pagination={{
             pageSize: 5,
             onChange: (page) => console.log(page),
           }}
-          dateFormatter="string"
-          headerTitle="高级表格"
           toolBarRender={() => [
-            <Button
-              key="button"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                actionRef.current?.reload();
+            <ModalForm<{
+              name: string;
+              company: string;
+            }>
+              key="add"
+              title="新增订单"
+              trigger={
+                <Button type="primary">
+                  <PlusOutlined />
+                  新增订单
+                </Button>
+              }
+              labelCol={{ span: 7 }}
+              wrapperCol={{ span: 17 }}
+              layout="horizontal"
+              form={form}
+              autoFocusFirstInput
+              modalProps={{
+                destroyOnClose: true,
+                onCancel: () => console.log('run'),
               }}
-              type="primary"
-            >
-              新建
-            </Button>,
-            <Dropdown
-              key="menu"
-              menu={{
-                items: [
-                  {
-                    label: '1st item',
-                    key: '1',
-                  },
-                  {
-                    label: '2nd item',
-                    key: '1',
-                  },
-                  {
-                    label: '3rd item',
-                    key: '1',
-                  },
-                ],
+              width={500}
+              submitTimeout={5000}
+              onFinish={async (values: any) => {
+                values.userId = JSON.parse(
+                  localStorage.getItem('user') || '{}',
+                ).user_id;
+                await createOrder(values);
+                message.success('提交成功');
+                actionRef.current!.reload();
+                return true;
               }}
+              initialValues={{ OrderStatus: 'preSales' }}
             >
-              <Button>
-                <EllipsisOutlined />
-              </Button>
-            </Dropdown>,
+              <ProFormSelect
+                name="productId"
+                label="商品"
+                request={async () => {
+                  let { data }: any = await getProducts({
+                    userId: JSON.parse(localStorage.getItem('user') || '{}')
+                      .user_id,
+                  });
+                  data = data.map((item: any) => {
+                    return {
+                      label: item.ProductName,
+                      value: item.ProductID,
+                    };
+                  });
+                  return data;
+                }}
+                placeholder="请选择商品"
+                rules={[{ required: true, message: '请选择商品!' }]}
+              />
+              <ProFormSelect
+                name="OrderStatus"
+                label="订单状态"
+                valueEnum={{
+                  preSales: '售前',
+                  paid: '已付款',
+                  production: '制作中',
+                  shipped: '已发货',
+                  received: '已收货',
+                  over: '已完结',
+                  cancel: '已取消',
+                }}
+                placeholder="请选择订单状态"
+                rules={[{ required: true, message: '请选择订单状态!' }]}
+              />
+              <ProFormDateTimePicker
+                name="expectedDeliverTime"
+                label="预计发货时间"
+                width={'lg'}
+              />
+              <Space>
+                <ProFormDigit label="订单总价" name="OrderPrice" min={0} />
+                <ProFormDigit label="总计数量" name="TotalAmount" min={0} />
+              </Space>
+              <Space>
+                <ProFormSelect
+                  name="customerId"
+                  width={'sm'}
+                  label="顾客"
+                  request={async () => {
+                    const res: any = await getCustomerAddress({
+                      userId: JSON.parse(localStorage.getItem('user') || '{}')
+                        .user_id,
+                    });
+                    res.map((item: any) => {
+                      return {
+                        label:
+                          item.locationAddress +
+                          '-' +
+                          item.streetAddress +
+                          '-' +
+                          item.fullName +
+                          '-' +
+                          item.phoneNumber,
+                        value: item.id,
+                      };
+                    });
+                    return res;
+                  }}
+                  placeholder="请选择顾客"
+                  rules={[{ required: true, message: '请选择顾客!' }]}
+                />
+                <ProFormSelect
+                  name="CustomerAddressId"
+                  width={'sm'}
+                  label="收货地址"
+                  request={async () => {
+                    const res: any = await getCustomerAddress({
+                      userId: JSON.parse(localStorage.getItem('user') || '{}')
+                        .user_id,
+                    });
+                    res.map((item: any) => {
+                      return {
+                        label:
+                          item.locationAddress +
+                          '-' +
+                          item.streetAddress +
+                          '-' +
+                          item.fullName +
+                          '-' +
+                          item.phoneNumber,
+                        value: item.id,
+                      };
+                    });
+                    return res;
+                  }}
+                  placeholder="请选择收货地址"
+                />
+              </Space>
+              <ProFormTextArea
+                name="Remark"
+                label="备注"
+                placeholder="请输入订单备注"
+              />
+            </ModalForm>,
           ]}
         />
       </div>

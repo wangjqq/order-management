@@ -32,7 +32,12 @@ export default defineConfig({
           component: './Order',
         },
         {
-          name: '客户管理',
+          name: '商品管理',
+          path: '/dataManagement/product',
+          component: './Product',
+        },
+        {
+          name: '顾客管理',
           path: '/dataManagement/customer',
           component: './Customer',
         },

@@ -1,5 +1,8 @@
-import { createOrder, getCustomerAddress, getOrders } from '@/services/order';
+import { COLOR_ENUM, LOCATION, ORDER_STATUS } from '@/constants';
+import { getCustomerAddresss, getCustomers } from '@/services/customer';
+import { createOrder, getOrders } from '@/services/order';
 import { getProducts } from '@/services/product';
+import { findLabelsByCodes } from '@/utils/format';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
@@ -57,25 +60,16 @@ const columns: ProColumns<GithubIssueItem>[] = [
     title: '状态',
     dataIndex: 'OrderStatus',
     ellipsis: true,
-    render: (OrderStatus) => (
-      <Space>
-        <Tag>{OrderStatus}</Tag>
-      </Space>
-    ),
-  },
-  {
-    disable: true,
-    title: '标签',
-    dataIndex: 'labels',
-    render: (_, record) => (
-      <Space>
-        {record.labels.map(({ name, color }) => (
-          <Tag color={color} key={name}>
-            {name}
-          </Tag>
-        ))}
-      </Space>
-    ),
+    render: (text) => {
+      console.log(text);
+      return (
+        // @ts-ignore
+        <Tag color={COLOR_ENUM[text.props.children]}>
+          {/* @ts-ignore */}
+          {ORDER_STATUS[text.props.children]}
+        </Tag>
+      );
+    },
   },
   {
     title: '创建时间',
@@ -167,8 +161,8 @@ export default () => {
                   新增订单
                 </Button>
               }
-              labelCol={{ span: 7 }}
-              wrapperCol={{ span: 17 }}
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
               layout="horizontal"
               form={form}
               autoFocusFirstInput
@@ -229,8 +223,20 @@ export default () => {
                 width={'lg'}
               />
               <Space>
-                <ProFormDigit label="订单总价" name="OrderPrice" min={0} />
-                <ProFormDigit label="总计数量" name="TotalAmount" min={0} />
+                <ProFormDigit
+                  label="订单总价"
+                  name="OrderPrice"
+                  min={0}
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
+                />
+                <ProFormDigit
+                  label="总计数量"
+                  name="TotalAmount"
+                  min={0}
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
+                />
               </Space>
               <Space>
                 <ProFormSelect
@@ -238,53 +244,49 @@ export default () => {
                   width={'sm'}
                   label="顾客"
                   request={async () => {
-                    const res: any = await getCustomerAddress({
+                    const res: any = await getCustomers({
                       userId: JSON.parse(localStorage.getItem('user') || '{}')
                         .user_id,
                     });
-                    res.map((item: any) => {
+                    res.data = res.data.map((item: any) => {
                       return {
-                        label:
-                          item.locationAddress +
-                          '-' +
-                          item.streetAddress +
-                          '-' +
-                          item.fullName +
-                          '-' +
-                          item.phoneNumber,
-                        value: item.id,
+                        label: item.Name,
+                        value: item.CustomerID,
                       };
                     });
-                    return res;
+                    return res.data;
                   }}
                   placeholder="请选择顾客"
                   rules={[{ required: true, message: '请选择顾客!' }]}
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
                 />
                 <ProFormSelect
                   name="CustomerAddressId"
                   width={'sm'}
                   label="收货地址"
                   request={async () => {
-                    const res: any = await getCustomerAddress({
+                    const res = await getCustomerAddresss({
                       userId: JSON.parse(localStorage.getItem('user') || '{}')
                         .user_id,
                     });
-                    res.map((item: any) => {
+                    const data = res.data.map((item: any) => {
                       return {
-                        label:
-                          item.locationAddress +
-                          '-' +
-                          item.streetAddress +
-                          '-' +
-                          item.fullName +
-                          '-' +
-                          item.phoneNumber,
+                        label: `${item.fullName} ${
+                          item.phoneNumber
+                        } ${findLabelsByCodes(
+                          JSON.parse(item.locationAddress),
+                          LOCATION,
+                        ).join(' ')} ${item.streetAddress}`,
                         value: item.id,
                       };
                     });
-                    return res;
+                    console.log(data);
+                    return data;
                   }}
                   placeholder="请选择收货地址"
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
                 />
               </Space>
               <ProFormTextArea

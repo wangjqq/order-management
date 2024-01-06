@@ -1,16 +1,22 @@
-import { createProduct, getProducts } from '@/services/product';
+import { LOCATION } from '@/constants';
+import {
+  createCustomer,
+  createCustomerAddress,
+  getCustomerAddresss,
+  getCustomers,
+} from '@/services/customer';
+import { findLabelsByCodes } from '@/utils/format';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
   ModalForm,
   PageContainer,
-  ProFormDigit,
+  ProFormSelect,
   ProFormText,
-  ProFormTextArea,
   ProTable,
   TableDropdown,
 } from '@ant-design/pro-components';
-import { Button, Form, message } from 'antd';
+import { Button, Cascader, Form, message } from 'antd';
 import { useRef } from 'react';
 
 const columns: ProColumns[] = [
@@ -20,17 +26,22 @@ const columns: ProColumns[] = [
     width: 48,
   },
   {
-    title: '商品名称',
-    dataIndex: 'ProductName',
+    title: '姓名',
+    dataIndex: 'Name',
   },
   {
-    title: '商品描述',
-    dataIndex: 'Description',
+    title: '电话',
+    dataIndex: 'Phone',
     ellipsis: true,
   },
   {
-    title: '参考价格',
-    dataIndex: 'UnitPrice',
+    title: '微信',
+    dataIndex: 'WeChat',
+    ellipsis: true,
+  },
+  {
+    title: '来源',
+    dataIndex: 'Source',
     ellipsis: true,
   },
   {
@@ -82,7 +93,7 @@ export default () => {
           actionRef={actionRef}
           cardBordered
           request={async () => {
-            return await getProducts({
+            return await getCustomers({
               userId: JSON.parse(localStorage.getItem('user') || '{}').user_id,
             });
           }}
@@ -125,23 +136,105 @@ export default () => {
                 values.userId = JSON.parse(
                   localStorage.getItem('user') || '{}',
                 ).user_id;
-                await createProduct(values);
+                await createCustomer(values);
+                message.success('提交成功');
+                actionRef.current!.reload();
+                return true;
+              }}
+            >
+              <ProFormText name="Name" label="名称" />
+              <ProFormText name="Phone" label="电话号码" />
+              <ProFormText name="WeChat" label="微信" />
+              <ProFormSelect
+                name="Source"
+                label="来源"
+                valueEnum={{
+                  xianyu: '闲鱼',
+                }}
+              />
+              <ProFormSelect
+                name="AddressIds"
+                label="地址"
+                request={async () => {
+                  const res = await getCustomerAddresss({
+                    userId: JSON.parse(localStorage.getItem('user') || '{}')
+                      .user_id,
+                  });
+                  const data = res.data.map((item: any) => {
+                    return {
+                      label: `${item.fullName} ${
+                        item.phoneNumber
+                      } ${findLabelsByCodes(
+                        JSON.parse(item.locationAddress),
+                        LOCATION,
+                      ).join(' ')} ${item.streetAddress}`,
+                      value: item.id,
+                    };
+                  });
+                  console.log(data);
+                  return data;
+                }}
+                fieldProps={{
+                  mode: 'multiple',
+                }}
+              />
+            </ModalForm>,
+            <ModalForm<{
+              name: string;
+              company: string;
+            }>
+              key="addAddress"
+              title="添加地址"
+              trigger={
+                <Button type="primary">
+                  <PlusOutlined />
+                  添加地址
+                </Button>
+              }
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
+              layout="horizontal"
+              form={form}
+              autoFocusFirstInput
+              modalProps={{
+                destroyOnClose: true,
+                onCancel: () => console.log('run'),
+              }}
+              width={500}
+              submitTimeout={5000}
+              onFinish={async (values: any) => {
+                values.userId = JSON.parse(
+                  localStorage.getItem('user') || '{}',
+                ).user_id;
+                values.locationAddress = JSON.stringify(values.locationAddress);
+                await createCustomerAddress(values);
                 message.success('提交成功');
                 actionRef.current!.reload();
                 return true;
               }}
             >
               <ProFormText
-                name="ProductName"
-                label="商品名称"
-                rules={[{ required: true, message: '请输入商品名称!' }]}
+                name="fullName"
+                label="收货人姓名"
+                rules={[{ required: true, message: '请填写收货人姓名!' }]}
               />
-              <ProFormTextArea
-                name="Description"
-                label="商品描述"
-                placeholder="请输入商品描述"
+              <ProFormText
+                name="phoneNumber"
+                label="联系电话"
+                rules={[{ required: true, message: '请填写联系电话!' }]}
               />
-              <ProFormDigit label="参考价格" name="UnitPrice" min={0} />
+              <Form.Item
+                name="locationAddress"
+                label="省市区"
+                rules={[{ required: true, message: '请选择省市区!' }]}
+              >
+                <Cascader options={LOCATION} />
+              </Form.Item>
+              <ProFormText
+                name="streetAddress"
+                label="街道地址"
+                rules={[{ required: true, message: '请填写街道地址!' }]}
+              />
             </ModalForm>,
           ]}
         />

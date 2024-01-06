@@ -7,7 +7,3 @@ export const getOrders = async (params: any) => {
 export const createOrder = async (data: any) => {
   return await apiService.post('/order/createOrder', data);
 };
-
-export const getCustomerAddress = async (params: any) => {
-  return await apiService.get('/order/getCustomerAddress', { params });
-};

@@ -16,7 +16,7 @@ import {
   TableDropdown,
 } from '@ant-design/pro-components';
 import { Button, Form, Space, Tag, message } from 'antd';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import styles from './index.less';
 export const waitTimePromise = async (time: number = 100) => {
   return new Promise((resolve) => {
@@ -46,85 +46,85 @@ type GithubIssueItem = {
   closed_at?: string;
 };
 
-const columns: ProColumns<GithubIssueItem>[] = [
-  {
-    dataIndex: 'index',
-    valueType: 'indexBorder',
-    width: 48,
-  },
-  {
-    title: '商品',
-    dataIndex: 'product',
-  },
-  {
-    title: '状态',
-    dataIndex: 'OrderStatus',
-    ellipsis: true,
-    render: (text) => {
-      console.log(text);
-      return (
-        // @ts-ignore
-        <Tag color={COLOR_ENUM[text.props.children]}>
-          {/* @ts-ignore */}
-          {ORDER_STATUS[text.props.children]}
-        </Tag>
-      );
-    },
-  },
-  {
-    title: '创建时间',
-    key: 'showTime',
-    dataIndex: 'created_at',
-    valueType: 'date',
-    sorter: true,
-    hideInSearch: true,
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'created_at',
-    valueType: 'dateRange',
-    hideInTable: true,
-    search: {
-      transform: (value) => {
-        return {
-          startTime: value[0],
-          endTime: value[1],
-        };
-      },
-    },
-  },
-  {
-    title: '操作',
-    valueType: 'option',
-    key: 'option',
-    render: (text, record, _, action) => [
-      <a
-        key="editable"
-        onClick={() => {
-          action?.startEditable?.(record.id);
-        }}
-      >
-        编辑
-      </a>,
-      <a href={record.url} target="_blank" rel="noopener noreferrer" key="view">
-        查看
-      </a>,
-      <TableDropdown
-        key="actionGroup"
-        onSelect={() => action?.reload()}
-        menus={[
-          { key: 'copy', name: '复制' },
-          { key: 'delete', name: '删除' },
-        ]}
-      />,
-    ],
-  },
-];
-
 export default () => {
   const actionRef = useRef<ActionType>();
   const [form] = Form.useForm<{ name: string; company: string }>();
-  // actionRef.current.reload();
+  const [modalVisit, setModalVisit] = useState(false);
+  const [modalTitle, setModalTitle] = useState('新增订单');
+  const [customerAddresss, setCustomerAddresss] = useState({});
+
+  const columns: ProColumns<GithubIssueItem>[] = [
+    {
+      title: '序号',
+      dataIndex: 'index',
+      width: 48,
+      render: (_, record, index, action: any) => {
+        const { current, pageSize } = action.pageInfo;
+        return (current - 1) * pageSize + index + 1;
+      },
+    },
+    {
+      title: '商品',
+      dataIndex: 'productName',
+      ellipsis: true,
+    },
+    {
+      title: '顾客',
+      dataIndex: 'customerName',
+      ellipsis: true,
+    },
+    {
+      title: '状态',
+      dataIndex: 'OrderStatus',
+      ellipsis: true,
+      render: (text) => {
+        console.log(text);
+        return (
+          // @ts-ignore
+          <Tag color={COLOR_ENUM[text.props.children]}>
+            {/* @ts-ignore */}
+            {ORDER_STATUS[text.props.children]}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'OrderDate',
+      valueType: 'dateTime',
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updated_at',
+      valueType: 'dateTime',
+    },
+    {
+      title: '操作',
+      valueType: 'option',
+      key: 'option',
+      render: (text, record, _, action) => [
+        <Button
+          type="link"
+          key="editable"
+          onClick={() => {
+            setModalVisit(true);
+            setModalTitle('编辑订单');
+          }}
+        >
+          编辑
+        </Button>,
+        <TableDropdown
+          key="actionGroup"
+          onSelect={() => action?.reload()}
+          menus={[
+            { key: 'copy', name: '复制' },
+            { key: 'delete', name: '删除' },
+          ]}
+        />,
+      ],
+    },
+  ];
+
   return (
     <PageContainer ghost>
       <div className={styles.container}>
@@ -154,9 +154,14 @@ export default () => {
               company: string;
             }>
               key="add"
-              title="新增订单"
+              title={modalTitle}
+              open={modalVisit}
+              onOpenChange={setModalVisit}
               trigger={
-                <Button type="primary">
+                <Button
+                  type="primary"
+                  onClick={() => setModalTitle('新增订单')}
+                >
                   <PlusOutlined />
                   新增订单
                 </Button>
@@ -190,8 +195,10 @@ export default () => {
                   let { data }: any = await getProducts({
                     userId: JSON.parse(localStorage.getItem('user') || '{}')
                       .user_id,
+                    current: 1,
+                    pageSize: 1000,
                   });
-                  data = data.map((item: any) => {
+                  data = data.data.map((item: any) => {
                     return {
                       label: item.ProductName,
                       value: item.ProductID,
@@ -251,6 +258,7 @@ export default () => {
                     res.data = res.data.map((item: any) => {
                       return {
                         label: item.Name,
+                        AddressIds: item.AddressIds,
                         value: item.CustomerID,
                       };
                     });
@@ -260,13 +268,9 @@ export default () => {
                   rules={[{ required: true, message: '请选择顾客!' }]}
                   labelCol={{ span: 10 }}
                   wrapperCol={{ span: 14 }}
-                />
-                <ProFormSelect
-                  name="CustomerAddressId"
-                  width={'sm'}
-                  label="收货地址"
-                  request={async () => {
+                  onChange={async (value, option) => {
                     const res = await getCustomerAddresss({
+                      AddressIds: option.AddressIds,
                       userId: JSON.parse(localStorage.getItem('user') || '{}')
                         .user_id,
                     });
@@ -281,9 +285,21 @@ export default () => {
                         value: item.id,
                       };
                     });
-                    console.log(data);
-                    return data;
+                    const outputObject = data.reduce(
+                      (result: any, item: any) => {
+                        result[item.value] = item.label;
+                        return result;
+                      },
+                      {},
+                    );
+                    setCustomerAddresss(outputObject);
                   }}
+                />
+                <ProFormSelect
+                  name="CustomerAddressId"
+                  width={'sm'}
+                  label="收货地址"
+                  valueEnum={customerAddresss}
                   placeholder="请选择收货地址"
                   labelCol={{ span: 10 }}
                   wrapperCol={{ span: 14 }}

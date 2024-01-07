@@ -4,7 +4,6 @@ import {
   InfoCircleFilled,
   QuestionCircleFilled,
 } from '@ant-design/icons';
-import { DefaultFooter } from '@ant-design/pro-components';
 import { Dropdown, MenuProps, Space } from 'antd';
 import { useEffect, useState } from 'react';
 import { history } from 'umi';
@@ -71,15 +70,15 @@ export const layout: RunTimeLayoutConfig = () => {
         <GithubFilled key="GithubFilled" />,
       ];
     },
-    footerRender: () => (
-      <DefaultFooter
-        links={[
-          { key: 'test', title: 'layout', href: 'www.alipay.com' },
-          { key: 'test2', title: 'layout2', href: 'www.alipay.com' },
-        ]}
-        copyright="这是一条测试文案"
-      />
-    ),
+    // footerRender: () => (
+    //   <DefaultFooter
+    //     links={[
+    //       { key: 'test', title: 'layout', href: 'www.alipay.com' },
+    //       { key: 'test2', title: 'layout2', href: 'www.alipay.com' },
+    //     ]}
+    //     copyright="这是一条测试文案"
+    //   />
+    // ),
   };
 };
 

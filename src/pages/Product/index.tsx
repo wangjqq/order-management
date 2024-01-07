@@ -1,4 +1,4 @@
-import { createProduct, getProducts } from '@/services/product';
+import { createProduct, delProduct, getProducts } from '@/services/product';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
@@ -8,83 +8,99 @@ import {
   ProFormText,
   ProFormTextArea,
   ProTable,
-  TableDropdown,
 } from '@ant-design/pro-components';
-import { Button, Form, message } from 'antd';
-import { useRef } from 'react';
-
-const columns: ProColumns[] = [
-  {
-    dataIndex: 'index',
-    valueType: 'indexBorder',
-    width: 48,
-  },
-  {
-    title: '商品名称',
-    dataIndex: 'ProductName',
-  },
-  {
-    title: '商品描述',
-    dataIndex: 'Description',
-    ellipsis: true,
-  },
-  {
-    title: '参考价格',
-    dataIndex: 'UnitPrice',
-    ellipsis: true,
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'created_at',
-    valueType: 'dateTime',
-  },
-  {
-    title: '更新时间',
-    dataIndex: 'updated_at',
-    valueType: 'dateTime',
-  },
-  {
-    title: '操作',
-    valueType: 'option',
-    key: 'option',
-    render: (text, record, _, action) => [
-      <a
-        key="editable"
-        onClick={() => {
-          action?.startEditable?.(record.id);
-        }}
-      >
-        编辑
-      </a>,
-      <a href={record.url} target="_blank" rel="noopener noreferrer" key="view">
-        查看
-      </a>,
-      <TableDropdown
-        key="actionGroup"
-        onSelect={() => action?.reload()}
-        menus={[
-          { key: 'copy', name: '复制' },
-          { key: 'delete', name: '删除' },
-        ]}
-      />,
-    ],
-  },
-];
+import { Button, Form, Popconfirm, message } from 'antd';
+import { useRef, useState } from 'react';
 
 export default () => {
   const actionRef = useRef<ActionType>();
   const [form] = Form.useForm<{ name: string; company: string }>();
+  const [modalVisit, setModalVisit] = useState(false);
+  const [modalTitle, setModalTitle] = useState('新增商品');
+
+  const columns: ProColumns[] = [
+    {
+      title: '序号',
+      dataIndex: 'index',
+      width: 48,
+      render: (_, record, index, action: any) => {
+        const { current, pageSize } = action.pageInfo;
+        return (current - 1) * pageSize + index + 1;
+      },
+    },
+    {
+      title: '商品名称',
+      dataIndex: 'ProductName',
+    },
+    {
+      title: '商品描述',
+      dataIndex: 'Description',
+      ellipsis: true,
+    },
+    {
+      title: '参考价格',
+      dataIndex: 'UnitPrice',
+      ellipsis: true,
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      valueType: 'dateTime',
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updated_at',
+      valueType: 'dateTime',
+    },
+    {
+      title: '操作',
+      valueType: 'option',
+      key: 'option',
+      render: (text, record) => [
+        <Button
+          type="link"
+          key="editable"
+          onClick={() => {
+            form.setFieldsValue(record);
+            setModalVisit(true);
+            setModalTitle('编辑商品');
+          }}
+        >
+          编辑
+        </Button>,
+        <Popconfirm
+          key="delete"
+          title="确认删除"
+          description="删除后将无法恢复"
+          onConfirm={async () => {
+            await delProduct({
+              ProductID: record.ProductID,
+              userId: JSON.parse(localStorage.getItem('user') || '{}').user_id,
+            });
+            message.success('删除成功');
+            actionRef.current!.reload();
+          }}
+          okText="确定"
+          cancelText="取消"
+        >
+          <Button type="link">删除</Button>
+        </Popconfirm>,
+      ],
+    },
+  ];
   return (
-    <PageContainer ghost>
+    <PageContainer ghost title={false}>
       <div>
         <ProTable
           columns={columns}
           actionRef={actionRef}
           cardBordered
-          request={async () => {
-            return await getProducts({
+          request={async (params) => {
+            const { data } = await getProducts({
+              ...params,
               userId: JSON.parse(localStorage.getItem('user') || '{}').user_id,
             });
+            return data;
           }}
           rowKey="id"
           options={{
@@ -94,8 +110,7 @@ export default () => {
           }}
           search={false}
           pagination={{
-            pageSize: 5,
-            onChange: (page) => console.log(page),
+            pageSize: 10,
           }}
           toolBarRender={() => [
             <ModalForm<{
@@ -103,9 +118,14 @@ export default () => {
               company: string;
             }>
               key="add"
-              title="新增商品"
+              title={modalTitle}
+              open={modalVisit}
+              onOpenChange={setModalVisit}
               trigger={
-                <Button type="primary">
+                <Button
+                  type="primary"
+                  onClick={() => setModalTitle('新增商品')}
+                >
                   <PlusOutlined />
                   新增商品
                 </Button>
@@ -131,6 +151,7 @@ export default () => {
                 return true;
               }}
             >
+              <ProFormText name="ProductID" label="商品ID" hidden={true} />
               <ProFormText
                 name="ProductName"
                 label="商品名称"

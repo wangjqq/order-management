@@ -2,6 +2,7 @@ import { LOCATION } from '@/constants';
 import {
   createCustomer,
   createCustomerAddress,
+  delCustomer,
   getCustomerAddresss,
   getCustomers,
 } from '@/services/customer';
@@ -14,79 +15,96 @@ import {
   ProFormSelect,
   ProFormText,
   ProTable,
-  TableDropdown,
 } from '@ant-design/pro-components';
-import { Button, Cascader, Form, message } from 'antd';
-import { useRef } from 'react';
-
-const columns: ProColumns[] = [
-  {
-    dataIndex: 'index',
-    valueType: 'indexBorder',
-    width: 48,
-  },
-  {
-    title: '姓名',
-    dataIndex: 'Name',
-  },
-  {
-    title: '电话',
-    dataIndex: 'Phone',
-    ellipsis: true,
-  },
-  {
-    title: '微信',
-    dataIndex: 'WeChat',
-    ellipsis: true,
-  },
-  {
-    title: '来源',
-    dataIndex: 'Source',
-    ellipsis: true,
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'created_at',
-    valueType: 'dateTime',
-  },
-  {
-    title: '更新时间',
-    dataIndex: 'updated_at',
-    valueType: 'dateTime',
-  },
-  {
-    title: '操作',
-    valueType: 'option',
-    key: 'option',
-    render: (text, record, _, action) => [
-      <a
-        key="editable"
-        onClick={() => {
-          action?.startEditable?.(record.id);
-        }}
-      >
-        编辑
-      </a>,
-      <a href={record.url} target="_blank" rel="noopener noreferrer" key="view">
-        查看
-      </a>,
-      <TableDropdown
-        key="actionGroup"
-        onSelect={() => action?.reload()}
-        menus={[
-          { key: 'copy', name: '复制' },
-          { key: 'delete', name: '删除' },
-        ]}
-      />,
-    ],
-  },
-];
+import { Button, Cascader, Form, Popconfirm, message } from 'antd';
+import { useRef, useState } from 'react';
 
 export default () => {
   const actionRef = useRef<ActionType>();
   const [form] = Form.useForm<{ name: string; company: string }>();
+  const [modalVisit, setModalVisit] = useState(false);
+  const [modalTitle, setModalTitle] = useState('新增顾客');
+
+  const columns: ProColumns[] = [
+    {
+      title: '序号',
+      dataIndex: 'index',
+      width: 48,
+      render: (_, record, index, action: any) => {
+        const { current, pageSize } = action.pageInfo;
+        return (current - 1) * pageSize + index + 1;
+      },
+    },
+    {
+      title: '姓名',
+      dataIndex: 'Name',
+    },
+    {
+      title: '电话',
+      dataIndex: 'Phone',
+      ellipsis: true,
+    },
+    {
+      title: '微信',
+      dataIndex: 'WeChat',
+      ellipsis: true,
+    },
+    {
+      title: '来源',
+      dataIndex: 'Source',
+      ellipsis: true,
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      valueType: 'dateTime',
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updated_at',
+      valueType: 'dateTime',
+    },
+    {
+      title: '操作',
+      valueType: 'option',
+      key: 'option',
+      render: (text, record) => [
+        <Button
+          type="link"
+          key="editable"
+          onClick={() => {
+            record.AddressIds = JSON.parse(record.AddressIds);
+
+            form.setFieldsValue(record);
+            setModalVisit(true);
+            setModalTitle('编辑顾客');
+          }}
+        >
+          编辑
+        </Button>,
+        <Popconfirm
+          key="delete"
+          title="确认删除"
+          description="删除后将无法恢复"
+          onConfirm={async () => {
+            await delCustomer({
+              CustomerID: record.CustomerID,
+              userId: JSON.parse(localStorage.getItem('user') || '{}').user_id,
+            });
+            message.success('删除成功');
+            actionRef.current!.reload();
+          }}
+          okText="确定"
+          cancelText="取消"
+        >
+          <Button type="link">删除</Button>
+        </Popconfirm>,
+      ],
+    },
+  ];
+
   return (
-    <PageContainer ghost>
+    <PageContainer ghost title={false}>
       <div>
         <ProTable
           columns={columns}
@@ -114,7 +132,9 @@ export default () => {
               company: string;
             }>
               key="add"
-              title="添加顾客"
+              title={modalTitle}
+              open={modalVisit}
+              onOpenChange={setModalVisit}
               trigger={
                 <Button type="primary">
                   <PlusOutlined />
@@ -133,6 +153,7 @@ export default () => {
               width={500}
               submitTimeout={5000}
               onFinish={async (values: any) => {
+                values.AddressIds = JSON.stringify(values.AddressIds || []);
                 values.userId = JSON.parse(
                   localStorage.getItem('user') || '{}',
                 ).user_id;
@@ -142,6 +163,7 @@ export default () => {
                 return true;
               }}
             >
+              <ProFormText name="CustomerID" label="顾客ID" hidden={true} />
               <ProFormText name="Name" label="名称" />
               <ProFormText name="Phone" label="电话号码" />
               <ProFormText name="WeChat" label="微信" />
@@ -171,7 +193,6 @@ export default () => {
                       value: item.id,
                     };
                   });
-                  console.log(data);
                   return data;
                 }}
                 fieldProps={{

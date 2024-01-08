@@ -10,5 +10,5 @@ export const createProduct = async (data: any) => {
 };
 
 export const delProduct = async (data: any) => {
-  return await apiService.delete('/product/delProduct', data);
+  return await apiService.post('/product/delProduct', data);
 };

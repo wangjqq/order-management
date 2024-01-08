@@ -14,5 +14,5 @@ export const createCustomer = async (data: any) => {
   return await apiService.post('/customer/createCustomer', data);
 };
 export const delCustomer = async (data: any) => {
-  return await apiService.delete('/customer/delCustomer', data);
+  return await apiService.post('/customer/delCustomer', data);
 };

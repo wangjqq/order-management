@@ -1,6 +1,6 @@
 import { COLOR_ENUM, LOCATION, ORDER_STATUS } from '@/constants';
 import { getCustomerAddresss, getCustomers } from '@/services/customer';
-import { createOrder, getOrders } from '@/services/order';
+import { createOrder, delOrder, getOrders } from '@/services/order';
 import { getProducts } from '@/services/product';
 import { findLabelsByCodes } from '@/utils/format';
 import { PlusOutlined } from '@ant-design/icons';
@@ -11,11 +11,11 @@ import {
   ProFormDateTimePicker,
   ProFormDigit,
   ProFormSelect,
+  ProFormText,
   ProFormTextArea,
   ProTable,
-  TableDropdown,
 } from '@ant-design/pro-components';
-import { Button, Form, Space, Tag, message } from 'antd';
+import { Button, Form, Popconfirm, Space, Tag, message } from 'antd';
 import { useRef, useState } from 'react';
 import styles from './index.less';
 export const waitTimePromise = async (time: number = 100) => {
@@ -89,38 +89,75 @@ export default () => {
       },
     },
     {
-      title: '创建时间',
+      title: '下单时间',
       dataIndex: 'OrderDate',
       valueType: 'dateTime',
     },
     {
-      title: '更新时间',
-      dataIndex: 'updated_at',
+      title: '预计发货时间',
+      dataIndex: 'expectedDeliverTime',
       valueType: 'dateTime',
+    },
+    {
+      title: '订单利润',
+      dataIndex: 'OrderPrice',
+      valueType: 'money',
     },
     {
       title: '操作',
       valueType: 'option',
       key: 'option',
-      render: (text, record, _, action) => [
+      render: (text, record: any) => [
         <Button
           type="link"
           key="editable"
-          onClick={() => {
+          onClick={async () => {
+            console.log(record);
+            form.setFieldsValue(record);
             setModalVisit(true);
             setModalTitle('编辑订单');
+            const res = await getCustomerAddresss({
+              CustomerID: record.customerId,
+              userId: JSON.parse(localStorage.getItem('user') || '{}').user_id,
+            });
+            const data = res.data.map((item: any) => {
+              return {
+                label: `${item.fullName} ${
+                  item.phoneNumber
+                } ${findLabelsByCodes(
+                  JSON.parse(item.locationAddress),
+                  LOCATION,
+                ).join(' ')} ${item.streetAddress}`,
+                value: item.id,
+              };
+            });
+            const outputObject = data.reduce((result: any, item: any) => {
+              result[item.value] = item.label;
+              return result;
+            }, {});
+            console.log(outputObject);
+            setCustomerAddresss(outputObject);
           }}
         >
           编辑
         </Button>,
-        <TableDropdown
-          key="actionGroup"
-          onSelect={() => action?.reload()}
-          menus={[
-            { key: 'copy', name: '复制' },
-            { key: 'delete', name: '删除' },
-          ]}
-        />,
+        <Popconfirm
+          key="delete"
+          title="确认删除"
+          description="删除后将无法恢复"
+          onConfirm={async () => {
+            await delOrder({
+              OrderID: record.OrderID,
+              userId: JSON.parse(localStorage.getItem('user') || '{}').user_id,
+            });
+            message.success('删除成功');
+            actionRef.current!.reload();
+          }}
+          okText="确定"
+          cancelText="取消"
+        >
+          <Button type="link">删除</Button>
+        </Popconfirm>,
       ],
     },
   ];
@@ -188,6 +225,7 @@ export default () => {
               }}
               initialValues={{ OrderStatus: 'preSales' }}
             >
+              <ProFormText name="OrderID" label="订单ID" hidden={true} />
               <ProFormSelect
                 name="productId"
                 label="商品"
@@ -224,14 +262,23 @@ export default () => {
                 placeholder="请选择订单状态"
                 rules={[{ required: true, message: '请选择订单状态!' }]}
               />
-              <ProFormDateTimePicker
-                name="expectedDeliverTime"
-                label="预计发货时间"
-                width={'lg'}
-              />
+              <Space>
+                <ProFormDateTimePicker
+                  name="OrderDate"
+                  label="下单时间"
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
+                />
+                <ProFormDateTimePicker
+                  name="expectedDeliverTime"
+                  label="预计发货时间"
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
+                />
+              </Space>
               <Space>
                 <ProFormDigit
-                  label="订单总价"
+                  label="订单利润"
                   name="OrderPrice"
                   min={0}
                   labelCol={{ span: 10 }}

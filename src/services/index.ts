@@ -4,9 +4,7 @@ import { history } from 'umi';
 
 const apiService = axios.create({
   baseURL:
-    process.env.NODE_ENV === 'production'
-      ? '61.132.231.210:52786/api'
-      : 'http://localhost:3000',
+    process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3000',
   timeout: 10000, // 请求超时时间
 });
 

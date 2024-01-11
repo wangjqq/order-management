@@ -6,7 +6,7 @@ export default defineConfig({
   model: {},
   initialState: {},
   request: {},
-  dynamicImport: { loading: '@/Loading' },
+  // dynamicImport: { loading: '@/Loading' },
   layout: {
     title: '@umijs/max',
   },

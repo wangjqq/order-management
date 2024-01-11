@@ -1,6 +1,7 @@
 import { defineConfig } from 'umi';
 const CompressionWebpackPlugin = require('compression-webpack-plugin');
 export default defineConfig({
+  dynamicImport: { loading: '@/Loading' },
   chainWebpack(config) {
     // 添加 Gzip 压缩插件
     config.plugin('compression-webpack-plugin').use(CompressionWebpackPlugin, [

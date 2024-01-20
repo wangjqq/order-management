@@ -1,9 +1,28 @@
 import apiService from '.';
 
-export const getFileTree = async () => {
-  return await apiService.get('/file/fileTree');
+export const getFileTree = async (params: any) => {
+  return await apiService.get('/file/fileDirTree', { params });
 };
 
-export const upload = async (data: { file: string; password: string }) => {
-  return await apiService.post('/user/login', data);
+export const getFiles = async (params: any) => {
+  return await apiService.get('/file/filesList', { params });
+};
+
+export const addFileTree = async (data: any) => {
+  return await apiService.post('/file/createFolder', data);
+};
+
+export const createFolder = async (data: any) => {
+  return await apiService.post('/file/createFolder', data);
+};
+
+export const delFolder = async (data: any) => {
+  return await apiService.post('/file/delFolder', data);
+};
+
+export const upload = async (data: any, onUploadProgress: any) => {
+  return await apiService.post('/file/upload', data, {
+    timeout: 0, // 设置超时时间
+    onUploadProgress,
+  });
 };

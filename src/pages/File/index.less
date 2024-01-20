@@ -1,2 +1,22 @@
 .container {
+  display: flex;
+  height: 700px;
+
+  :global {
+    .ant-tree {
+      flex-shrink: 0;
+      height: 100%;
+      width: 200px;
+      background: #f5f5f5;
+
+      .ant-tree-node-content-wrapper {
+        display: flex;
+        width: 100%;
+
+        .ant-tree-title {
+          width: 100%;
+        }
+      }
+    }
+  }
 }

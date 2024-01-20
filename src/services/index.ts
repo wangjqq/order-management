@@ -34,6 +34,9 @@ apiService.interceptors.response.use(
     } else if (data.code === 400) {
       message.error(data.msg);
       return Promise.reject();
+    } else if (data.code === 500) {
+      message.error(data.msg);
+      return Promise.reject();
     }
     return data;
   },

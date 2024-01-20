@@ -176,6 +176,7 @@ const File = () => {
     ]);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('fileName', file.name);
 
     // 添加额外参数
     formData.append('userId', user_id);

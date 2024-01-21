@@ -1,6 +1,8 @@
+import { baseURL } from '@/services';
 import {
   addFileTree,
   delFolder,
+  deleteFile,
   getFileTree,
   getFiles,
   upload,
@@ -34,98 +36,6 @@ import styles from './index.less';
 
 const { DirectoryTree } = Tree;
 
-const columns: ProColumns[] = [
-  {
-    title: '序号',
-    dataIndex: 'index',
-    width: 48,
-    render: (_, record, index, action: any) => {
-      const { current, pageSize } = action.pageInfo;
-      return (current - 1) * pageSize + index + 1;
-    },
-  },
-  {
-    title: '文件名',
-    dataIndex: 'name',
-    ellipsis: true,
-  },
-  {
-    title: '文件类型',
-    dataIndex: 'mimeType',
-    ellipsis: true,
-  },
-  {
-    title: '文件大小',
-    dataIndex: 'size',
-    ellipsis: true,
-    render(dom, entity) {
-      return <span>{formatBytes(entity.size)}</span>;
-    },
-  },
-  {
-    title: '上传时间',
-    dataIndex: 'created_at',
-    valueType: 'dateTime',
-  },
-  {
-    title: '操作',
-    valueType: 'option',
-    key: 'option',
-    render: () => [
-      // <Button
-      //   type="link"
-      //   key="editable"
-      //   onClick={async () => {
-      //     console.log(record);
-      //     form.setFieldsValue(record);
-      //     setModalVisit(true);
-      //     setModalTitle('编辑订单');
-      //     const res = await getCustomerAddresss({
-      //       CustomerID: record.customerId,
-      //       userId:user_id,
-      //     });
-      //     const data = res.data.map((item: any) => {
-      //       return {
-      //         label: `${item.fullName} ${
-      //           item.phoneNumber
-      //         } ${findLabelsByCodes(
-      //           JSON.parse(item.locationAddress),
-      //           LOCATION,
-      //         ).join(' ')} ${item.streetAddress}`,
-      //         value: item.id,
-      //       };
-      //     });
-      //     const outputObject = data.reduce((result: any, item: any) => {
-      //       result[item.value] = item.label;
-      //       return result;
-      //     }, {});
-      //     console.log(outputObject);
-      //     setCustomerAddresss(outputObject);
-      //   }}
-      // >
-      //   编辑
-      // </Button>,
-      // <Popconfirm
-      //   key="delete"
-      //   title="确认删除"
-      //   description="删除后将无法恢复"
-      //   onConfirm={async () => {
-      //     await delOrder({
-      //       OrderID: record.OrderID,
-      //       userId:user_id,
-      //     });
-      //     message.success('删除成功');
-      //     actionRef.current!.reload();
-      //   }}
-      //   okText="确定"
-      //   cancelText="取消"
-      // >
-      //   <Button type="link">删除</Button>
-      // </Popconfirm>,
-    ],
-  },
-];
-
 const File = () => {
   const user_id: string = useMemo(
     () => JSON.parse(localStorage.getItem('user') || '{}').user_id.toString(),
@@ -140,6 +50,71 @@ const File = () => {
   const actionRef = useRef<ActionType>();
   const [form] = Form.useForm<{ name: string; company: string }>();
 
+  const columns: ProColumns[] = [
+    {
+      title: '序号',
+      dataIndex: 'index',
+      width: 48,
+      render: (_, record, index, action: any) => {
+        const { current, pageSize } = action.pageInfo;
+        return (current - 1) * pageSize + index + 1;
+      },
+    },
+    {
+      title: '文件名',
+      dataIndex: 'name',
+      ellipsis: true,
+    },
+    {
+      title: '文件类型',
+      dataIndex: 'mimeType',
+      ellipsis: true,
+    },
+    {
+      title: '文件大小',
+      dataIndex: 'size',
+      ellipsis: true,
+      render(dom, entity) {
+        return <span>{formatBytes(entity.size)}</span>;
+      },
+    },
+    {
+      title: '上传时间',
+      dataIndex: 'created_at',
+      valueType: 'dateTime',
+    },
+    {
+      title: '操作',
+      valueType: 'option',
+      key: 'option',
+      render: (value, entity) => [
+        <Button
+          key="download"
+          type="link"
+          onClick={() => {
+            window.open(
+              `${baseURL}/file/download?path=${entity.path}&filename=${entity.name}
+          `,
+            );
+          }}
+        >
+          下载
+        </Button>,
+        <Button
+          key="delete"
+          type="link"
+          onClick={async () => {
+            await deleteFile({ id: entity.id, filePath: entity.path });
+            message.success('删除成功');
+            actionRef.current?.reload();
+          }}
+        >
+          删除
+        </Button>,
+      ],
+    },
+  ];
+
   const getTree = async () => {
     const tree = await getFileTree({
       userId: JSON.parse(
@@ -153,8 +128,7 @@ const File = () => {
     getTree();
   }, []);
 
-  const onSelect: DirectoryTreeProps['onSelect'] = (keys, info) => {
-    console.log('Trigger Select', keys, info);
+  const onSelect: DirectoryTreeProps['onSelect'] = (keys) => {
     setDirId(keys[0]);
     actionRef.current?.reload();
   };
@@ -172,7 +146,7 @@ const File = () => {
     console.log(file);
     // 构造 FormData 对象，用于传递文件和额外参数
     setFileList([
-      { name: file.name, percent: 0, status: 'uploading', uid: file.uid },
+      { name: '上传中', percent: 0, status: 'uploading', uid: file.uid },
     ]);
     const formData = new FormData();
     formData.append('file', file);
@@ -182,19 +156,25 @@ const File = () => {
     formData.append('userId', user_id);
     formData.append('dirId', dirId as string);
     upload(formData, (progressEvent: any) => {
+      console.log(progressEvent);
       const percentCompleted = Math.round(
         (progressEvent.loaded * 100) / progressEvent.total,
       );
       setFileList((prevList) => {
-        prevList[0].percent = percentCompleted;
+        if (prevList[0]) {
+          prevList[0].percent = percentCompleted;
+        }
         return prevList;
       });
       onProgress({ percent: percentCompleted }, file);
     })
       .then((result) => {
         setFileList((prevList) => {
-          prevList[0].percent = 100;
-          prevList[0].status = 'done';
+          if (prevList[0]) {
+            prevList[0].percent = 100;
+            prevList[0].name = '上传完成';
+            prevList[0].status = 'done';
+          }
           return prevList;
         });
         onSuccess(result, file);
@@ -203,8 +183,11 @@ const File = () => {
       .catch((error) => {
         // 处理上传失败的逻辑
         setFileList((prevList) => {
-          prevList[0].percent = 0;
-          prevList[0].status = 'error';
+          if (prevList[0]) {
+            prevList[0].percent = 0;
+            prevList[0].name = '上传异常,请核对文件列表';
+            prevList[0].status = 'error';
+          }
           return prevList;
         });
         onError(error, file);
@@ -326,7 +309,7 @@ const File = () => {
           }}
           toolBarRender={() => [
             <Upload
-              // action="http://localhost:3000/file/upload"
+              multiple
               customRequest={customRequest}
               fileList={fileList}
               onRemove={onRemove}

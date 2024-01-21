@@ -2,9 +2,11 @@ import { message } from 'antd';
 import axios from 'axios';
 import { history } from 'umi';
 
+export const baseURL =
+  process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3000';
+
 const apiService = axios.create({
-  baseURL:
-    process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3000',
+  baseURL: baseURL,
   timeout: 10000, // 请求超时时间
 });
 

@@ -8,6 +8,13 @@ export const getFiles = async (params: any) => {
   return await apiService.get('/file/filesList', { params });
 };
 
+export const deleteFile = async (data: any) => {
+  return await apiService.post('/file/deleteFile', data);
+};
+
+export const download = async (params: any) => {
+  return await apiService.get('/file/download', { params });
+};
 export const addFileTree = async (data: any) => {
   return await apiService.post('/file/createFolder', data);
 };

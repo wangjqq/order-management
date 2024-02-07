@@ -52,6 +52,18 @@ export default defineConfig({
         },
       ],
     },
+    {
+      name: '系统管理',
+      path: '/systemManagement',
+      // component: './Home',
+      routes: [
+        {
+          name: '系统监控',
+          path: '/systemManagement/monitor',
+          component: './Monitor',
+        },
+      ],
+    },
   ],
   npmClient: 'pnpm',
 });

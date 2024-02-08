@@ -78,7 +78,7 @@ const EChart = (props: EChartProps, ref: any) => {
     debounceResize();
   }, [style.width, style.height]);
 
-  return <div ref={cDom} style={{ width: '100%', height: '80%', ...style }} />;
+  return <div ref={cDom} style={{ width: '100%', height: '100%', ...style }} />;
 };
 
 export default React.memo(React.forwardRef(EChart));

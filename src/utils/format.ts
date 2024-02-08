@@ -22,17 +22,22 @@ export function findLabelsByCodes(codes: any, data: any) {
   return result;
 }
 
-export function formatBytes(bytes: string, decimals = 2) {
+export function formatBytes(
+  bytes: string,
+  decimals = 2,
+  noSize = false,
+  justSize = false,
+) {
   // 将字符串数字转换为数值类型
   const numericBytes = parseFloat(bytes);
 
   if (isNaN(numericBytes)) {
     // 如果转换失败，返回错误信息
-    return '异常大小';
+    return justSize ? '' : '异常大小';
   }
 
   if (numericBytes === 0) {
-    return '0 Bytes';
+    return justSize ? '' : '0 Bytes';
   }
 
   const k = 1024;
@@ -40,9 +45,12 @@ export function formatBytes(bytes: string, decimals = 2) {
 
   const i = Math.floor(Math.log(numericBytes) / Math.log(k));
 
+  if (justSize) {
+    return sizes[i];
+  }
+
   return (
     parseFloat((numericBytes / Math.pow(k, i)).toFixed(decimals)) +
-    ' ' +
-    sizes[i]
+    (noSize ? '' : ' ' + sizes[i])
   );
 }

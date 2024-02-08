@@ -1,7 +1,6 @@
 import apiService from '.';
 
 export const getProducts = async (params: any) => {
-  console.log(params);
   return await apiService.get('/product/getProducts', { params });
 };
 

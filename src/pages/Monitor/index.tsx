@@ -42,6 +42,7 @@ const Monitor: React.FC = () => {
       valueType: 'dateTime',
     },
   ];
+  console.log(list);
   return (
     <PageContainer ghost title={false}>
       <div className={styles['monitors']}>
@@ -87,7 +88,7 @@ const Monitor: React.FC = () => {
             // 数据系列
             series: [
               {
-                name: 'Firefox',
+                name: '已用内存',
                 type: 'line',
                 data: list.infoList?.map((item: any) =>
                   formatBytes(item.osData.mem.used, 2, true),
@@ -117,7 +118,13 @@ const Monitor: React.FC = () => {
             // 横坐标
             xAxis: {
               type: 'category',
-              data: ['10:00', '10:10', '10:20', '10:30', '10:40', '10:50'],
+              data: list.infoList?.map((item: any) => {
+                const date = new Date(item.created_at);
+                return date.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+              }),
             },
             // 纵坐标
             yAxis: {
@@ -136,9 +143,11 @@ const Monitor: React.FC = () => {
               //   areaStyle: {},
               // },
               {
-                name: 'Firefox',
+                name: 'CPU占用率',
                 type: 'line',
-                data: [400, 500, 600, 700, 800, 900],
+                data: list.infoList?.map((item: any) =>
+                  item.osData.currentLoad.currentLoad.toFixed(2),
+                ),
                 // 平滑曲线样式
                 smooth: true,
               },
@@ -159,14 +168,7 @@ const Monitor: React.FC = () => {
         columns={columns}
         actionRef={actionRef}
         cardBordered
-        request={async (
-          params: {
-            pageSize: number;
-            current: number;
-          },
-          sort,
-          filter,
-        ) => {
+        request={async (params: { pageSize: number; current: number }) => {
           const { data } = await queryOsData(params);
           setList({
             ...data,

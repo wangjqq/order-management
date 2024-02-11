@@ -23,13 +23,19 @@ export function findLabelsByCodes(codes: any, data: any) {
 }
 
 export function formatBytes(
-  bytes: string,
+  bytes: string | number,
   decimals = 2,
   noSize = false,
   justSize = false,
-) {
+  currect = 1,
+): any {
   // 将字符串数字转换为数值类型
-  const numericBytes = parseFloat(bytes);
+  let numericBytes;
+  if (typeof bytes === 'string') {
+    numericBytes = parseFloat(bytes);
+  } else {
+    numericBytes = bytes;
+  }
 
   if (isNaN(numericBytes)) {
     // 如果转换失败，返回错误信息
@@ -43,14 +49,14 @@ export function formatBytes(
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-  const i = Math.floor(Math.log(numericBytes) / Math.log(k));
+  const i = Math.floor(Math.log(numericBytes * currect) / Math.log(k));
 
   if (justSize) {
     return sizes[i];
   }
 
   return (
-    parseFloat((numericBytes / Math.pow(k, i)).toFixed(decimals)) +
+    parseFloat(((numericBytes * currect) / Math.pow(k, i)).toFixed(decimals)) +
     (noSize ? '' : ' ' + sizes[i])
   );
 }

@@ -53,14 +53,19 @@ export default defineConfig({
       ],
     },
     {
-      name: '系统管理',
+      name: '服务器管理',
       path: '/systemManagement',
       // component: './Home',
       routes: [
         {
-          name: '系统监控',
+          name: '服务器监控',
           path: '/systemManagement/monitor',
           component: './Monitor',
+        },
+        {
+          name: '服务器信息',
+          path: '/systemManagement/SystemInfo',
+          component: './SystemInfo',
         },
       ],
     },

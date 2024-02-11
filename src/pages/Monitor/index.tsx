@@ -7,11 +7,14 @@ import {
   ProColumns,
   ProTable,
 } from '@ant-design/pro-components';
+import { Select } from 'antd';
 import { useRef, useState } from 'react';
 import styles from './index.module.less';
 
 const Monitor: React.FC = () => {
   const [list, setList] = useState<any>([]);
+  const [fs, setFs] = useState<any>();
+  const [pageSize, setPageSize] = useState(5);
   const actionRef = useRef<ActionType>();
 
   const columns: ProColumns[] = [
@@ -47,7 +50,7 @@ const Monitor: React.FC = () => {
     <PageContainer ghost title={false}>
       <div className={styles['monitors']}>
         <EChart
-          style={{ width: '50%', height: '300px' }}
+          style={{ width: '33%', height: '300px' }}
           options={{
             title: {
               text: '内存占用',
@@ -65,19 +68,21 @@ const Monitor: React.FC = () => {
             // 横坐标
             xAxis: {
               type: 'category',
-              data: list.infoList?.map((item: any) => {
-                const date = new Date(item.created_at);
-                return date.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
-              }),
+              data: list.infoList
+                ?.map((item: any) => {
+                  const date = new Date(item.created_at);
+                  return date.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+                })
+                .reverse(),
             },
             // 纵坐标
             yAxis: {
               type: 'value',
               name: formatBytes(
-                list.infoList?.[0].osData.mem.total,
+                list.infoList?.[0]?.osData.mem.total,
                 2,
                 true,
                 true,
@@ -90,9 +95,11 @@ const Monitor: React.FC = () => {
               {
                 name: '已用内存',
                 type: 'line',
-                data: list.infoList?.map((item: any) =>
-                  formatBytes(item.osData.mem.used, 2, true),
-                ),
+                data: list.infoList
+                  ?.map((item: any) =>
+                    formatBytes(item.osData.mem.used, 2, true),
+                  )
+                  .reverse(),
                 // 平滑曲线样式
                 smooth: true,
               },
@@ -100,7 +107,7 @@ const Monitor: React.FC = () => {
           }}
         />
         <EChart
-          style={{ width: '50%', height: '300px' }}
+          style={{ width: '33%', height: '300px' }}
           options={{
             title: {
               text: 'CPU占用',
@@ -118,13 +125,15 @@ const Monitor: React.FC = () => {
             // 横坐标
             xAxis: {
               type: 'category',
-              data: list.infoList?.map((item: any) => {
-                const date = new Date(item.created_at);
-                return date.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
-              }),
+              data: list.infoList
+                ?.map((item: any) => {
+                  const date = new Date(item.created_at);
+                  return date.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+                })
+                .reverse(),
             },
             // 纵坐标
             yAxis: {
@@ -135,31 +144,101 @@ const Monitor: React.FC = () => {
             },
             // 数据系列
             series: [
-              // {
-              //   name: 'Chrome',
-              //   type: 'line',
-              //   data: [500, 600, 700, 800, 900, 1000],
-              //   // 面积图样式
-              //   areaStyle: {},
-              // },
               {
                 name: 'CPU占用率',
                 type: 'line',
-                data: list.infoList?.map((item: any) =>
-                  item.osData.currentLoad.currentLoad.toFixed(2),
-                ),
+                data: list.infoList
+                  ?.map((item: any) =>
+                    item.osData.currentLoad.currentLoad.toFixed(2),
+                  )
+                  .reverse(),
                 // 平滑曲线样式
                 smooth: true,
               },
-              // {
-              //   name: 'Edge',
-              //   type: 'line',
-              //   data: [300, 400, 500, 600, 700, 800],
-              //   // 虚线样式
-              //   lineStyle: {
-              //     type: 'dashed',
-              //   },
-              // },
+            ],
+          }}
+        />
+        <Select
+          value={fs}
+          style={{ width: 120 }}
+          onChange={(value) => setFs(value)}
+          options={list?.infoList?.[0].osData.fsSize.map((item: any) => {
+            return { value: item.fs, label: item.fs + formatBytes(item.size) };
+          })}
+        />
+        <EChart
+          style={{ width: '33%', height: '300px' }}
+          options={{
+            title: {
+              text: '硬盘占用',
+              left: 'center',
+            },
+            tooltip: {
+              trigger: 'item',
+            },
+            series: [
+              {
+                name: '硬盘使用情况',
+                type: 'pie',
+                radius: ['20%', '30%'],
+                avoidLabelOverlap: false,
+                label: {
+                  show: true,
+                },
+                labelLine: {
+                  show: true,
+                },
+                data: [
+                  {
+                    value: formatBytes(
+                      list?.infoList?.[0].osData.fsSize.find(
+                        (item: any) => item.fs === fs,
+                      ).used,
+                      2,
+                      true,
+                      false,
+                    ),
+                    itemStyle: {
+                      color: 'rgb(172, 172, 172)',
+                    },
+                    name:
+                      '已用空间' +
+                      '\n' +
+                      formatBytes(
+                        list?.infoList?.[0].osData.fsSize.find(
+                          (item: any) => item.fs === fs,
+                        ).used,
+                      ),
+                  },
+                  {
+                    value: formatBytes(
+                      list?.infoList?.[0].osData.fsSize.find(
+                        (item: any) => item.fs === fs,
+                      ).size -
+                        list?.infoList?.[0].osData.fsSize.find(
+                          (item: any) => item.fs === fs,
+                        ).used,
+                      2,
+                      true,
+                      false,
+                    ),
+                    itemStyle: {
+                      color: 'rgb(38, 160, 218)',
+                    },
+                    name:
+                      '可用空间' +
+                      '\n' +
+                      formatBytes(
+                        list?.infoList?.[0].osData.fsSize.find(
+                          (item: any) => item.fs === fs,
+                        ).size -
+                          list?.infoList?.[0].osData.fsSize.find(
+                            (item: any) => item.fs === fs,
+                          ).used,
+                      ),
+                  },
+                ],
+              },
             ],
           }}
         />
@@ -170,6 +249,7 @@ const Monitor: React.FC = () => {
         cardBordered
         request={async (params: { pageSize: number; current: number }) => {
           const { data } = await queryOsData(params);
+          setFs(JSON.parse(data?.infoList?.[0].osData).fsSize[0].fs);
           setList({
             ...data,
             infoList: data.infoList.map((item: any) => ({
@@ -201,8 +281,12 @@ const Monitor: React.FC = () => {
         }}
         search={false}
         pagination={{
-          pageSize: 5,
-          onChange: (page) => console.log(page),
+          pageSize,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          onShowSizeChange(current, size) {
+            setPageSize(size);
+          },
         }}
         toolBarRender={() => []}
       />

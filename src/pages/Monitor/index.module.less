@@ -1,3 +1,12 @@
 .monitors {
   display: flex;
+  position: relative;
+  :global {
+    .ant-select {
+      position: absolute;
+      top: 28px;
+      right: -23px;
+      z-index: 100;
+    }
+  }
 }
